@@ -5,23 +5,16 @@ A PostgreSQL database interface class written in PHP specifically designed to co
 
 Much of the underlying functionality utilizes PHP's native PostgreSQL driver to maintain performance and reliability.
 
-<b>Author</b>
-* Joshua D. Burns
-* jdburnz@gmail.com
-* http://www.youlikeprogramming.com
-* http://www.messageinaction.com
-
 <b>Features</b>
 * Automatic detection and transformation of multiple PostgreSQL data-types (such as Arrays, Hstores, etc) to native PHP data structures.
 * Transaction-style deletes, updates and inserts
 
-<b>Automatic Detection & Transformation</b>
+<b>More on Automatic Detection & Transformation of PostgreSQL data-types</b>
 * PostgreSQL Arrays (ANY data-type) to native PHP Arrays.
 * PostgreSQL Hstores to native PHP Associative Arrays.
 * PostgreSQL Geometric data-types (lseg, point, polygon, etc) to native PHP Arrays.
 * PostgreSQL Dates / Timestamps to native PHP DateTime Objects.
 * ... And many more!
-
 <b>Requirements</b>
 * TODO: This script has only been developed and tested in:
 * PHP 5.3.3
@@ -31,8 +24,27 @@ Much of the underlying functionality utilizes PHP's native PostgreSQL driver to 
 * PostgreSQL 6.5 or later. 8.0 or later for full PostgreSQL feature support.
 * PHP 5.0 or later.
 
+About The Author
+================
+<b>Written and maintained by:</b>
+* Joshua D. Burns (jdburnz@gmail.com)
+
+<b>Online PResence:</b>
+* Programming BLOG: http://www.youlikeprogramming.com
+* LinkedIn: http://www.linkedin.com/in/joshuadburns
+* Stack Overflow: http://stackoverflow.com/users/253254/joshua-burns
+
+<b>Background</b>
+* Co-Founder and Director of Technology at Message In Action (http://www.messageinaction.com).
+* Specialize in large-scale, high performance eCommerce and inventory management systems.
+
+<b>Qualifications</b>
+* 5+ years experience in Project Management
+* 10+ years of programming experience in PHP, Python and Javascript.
+* Intimate working knowledge of PostgreSQL, Microsoft SQL Server, MySQL and MongoDB database back-ends.
+
 Quick Start Guide / Tutorial
-====
+============================
 
 <b>Instantiating a connection to PostgreSQL</b>
 ```php
