@@ -169,7 +169,7 @@ $phpg->execute('delete user', "DELETE FROM users WHERE last_name = 'Doe'");
 $phpg->rollback();
 ```
 
-<i>Note: rollback() will undo ALL inserts, updates and deletes on that database connection since the last commit(). rollback() or instantiation. Currently the ability to rollback on an alias-by-alias basis is not supported.</i>
+<i>Note: rollback() will undo ALL inserts, updates and deletes on that database connection since the last commit(). Currently, the ability to rollback on an alias-by-alias basis is not supported.</i>
 
 <b>Performing an insert, update or delete, immediately discarding the result set</b>
 ```php
