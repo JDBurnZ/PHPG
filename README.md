@@ -15,12 +15,12 @@ Much of the underlying functionality utilizes PHP's native PostgreSQL driver to 
 * PostgreSQL Geometric data-types (lseg, point, polygon, etc) to native PHP Arrays.
 * PostgreSQL Dates / Timestamps to native PHP DateTime Objects.
 * ... And many more!
-<b>Requirements</b>
-* TODO: This script has only been developed and tested in:
-* PHP 5.3.3
-* PostgreSQL 8.4.8
 
-<i>In theory, this should work with:</i>
+<b>Requirements</b>
+
+Need to perform more testing, and create solid minimal requirements. Currently developed and tested on PHP 5.4 and PostgreSQL 9.2.
+
+Theoretical Requirements:
 * PostgreSQL 6.5 or later. 8.0 or later for full PostgreSQL feature support.
 * PHP 5.0 or later.
 
@@ -29,7 +29,7 @@ About The Author
 <b>Written and maintained by:</b>
 * Joshua D. Burns (jdburnz@gmail.com)
 
-<b>Online PResence:</b>
+<b>Online Presence:</b>
 * Programming BLOG: http://www.youlikeprogramming.com
 * LinkedIn: http://www.linkedin.com/in/joshuadburns
 * Stack Overflow: http://stackoverflow.com/users/253254/joshua-burns
