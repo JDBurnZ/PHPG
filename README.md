@@ -15,3 +15,9 @@ Automatic Detection and Transformation Of:
 Requirements
 * PostgreSQL >= 7
 * PHP >= 5.3
+
+[code]
+<?php
+cool!
+?>
+[/code]
