@@ -6,10 +6,10 @@ A PostgreSQL database interface class written in PHP specifically designed to co
 Much of the underlying functionality utilizes PHP's native PostgreSQL driver to maintain performance and reliability.
 
 <b>Author</b>
-Joshua D. Burns
-jdburnz@gmail.com
-http://www.youlikeprogramming.com
-http://www.messageinaction.com
+* Joshua D. Burns
+* jdburnz@gmail.com
+* http://www.youlikeprogramming.com
+* http://www.messageinaction.com
 
 <b>Features</b>
 * Automatic detection and transformation of multiple PostgreSQL data-types (such as Arrays, Hstores, etc) to native PHP data structures.
