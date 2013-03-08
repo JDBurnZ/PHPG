@@ -6,8 +6,9 @@ A PostgreSQL database interface class written in PHP specifically designed to co
 Much of the underlying functionality utilizes PHP's native PostgreSQL driver to maintain performance and reliability.
 
 <b>Features</b>
-* Automatic detection and transformation of multiple PostgreSQL data-types (such as Arrays, Hstores, etc) to native PHP data structures.
-* Transaction-style deletes, updates and inserts
+* Automatic detection and transformation of most PostgreSQL data-types (such as Integers, Floats, Booleans, NULLs, Arrays, Hstores, etc) to native PHP data structures.
+* Transaction-style deletes, updates and inserts.
+* Global database connection storage, easily retrieve existing connections from any scope.
 
 <b>More on Automatic Detection & Transformation of PostgreSQL data-types</b>
 * PostgreSQL Arrays (ANY data-type) to native PHP Arrays.
@@ -36,11 +37,11 @@ About The Author
 
 <b>Background</b>
 * Co-Founder and Director of Technology at Message In Action (http://www.messageinaction.com).
-* Specialize in large-scale, high performance eCommerce and inventory management systems.
+* Specializes in large-scale, high performance eCommerce and inventory management systems.
 
 <b>Qualifications</b>
 * 5+ years experience in Project Management
-* 10+ years of programming experience in PHP, Python and Javascript.
+* 15+ years of programming experience including PHP, Python and Javascript.
 * Intimate working knowledge of PostgreSQL, Microsoft SQL Server, MySQL and MongoDB database back-ends.
 
 Quick Start Guide / Tutorial
@@ -53,7 +54,7 @@ require('phpg.php'); // Contains PHPG Class
 
 // Pass a string of connection parameters as described here: http://php.net/manual/en/function.pg-connect.php
 $params = "host=localhost port=5432 dbname=my_db user=postgres password=my_pass options='--client_encoding=UTF8'";
-$phpg = new PHPG($params);
+$phpg = new PHPG('My DB', $params);
 
 // Pass an associative array of connection parameters:
 $params = array(
@@ -64,7 +65,7 @@ $params = array(
   'password' => 'my_pass',
   'options' => "'--client_encoding=UTF8'"
 );
-$phpg = new PHPG($params);
+$phpg = new PHPG('My DB', $params);
 ```
 
 <b>Retrieve an existing PostgreSQL conection</b>
@@ -74,42 +75,14 @@ require('phpg.php'); // Contains PHPG Class
 
 // Initial instantiation of connection, must pass connection parameters.
 $params = "host=localhost port=5432 dbname=my_db user=postgres password=my_pass options='--client_encoding=UTF8'";
-$phpg = new PHPG($params);
-$phpg->setConnectionAlias('My Connection');
+$phpg = new PHPG('My DB', $params);
 
 /**
 /* From Another Scope, where $phpg variable is not accessible...
 **/
 
-// Retrieve existing connection via it's alias, as define previously:
-$phpg = PHPG::getConnectionByAlias('My Connection'); // Suggested method of connection retrieval. 
-
-// Retrieve existing connection by instanting a new object, passing the same connection string parameters used in the original instantiation.
-$params = "host=localhost port=5432 dbname=my_db user=postgres password=my_pass options='--client_encoding=UTF8'";
-$phpg = new PHPG($params);
-
-// Retrieve existing connection by instanting a new object, passing the same array parameters used in the original instantiation.
-$params = array(
-  'host' => 'localhost',
-  'port' => '5432',
-  'dbname' => 'my_db',
-  'user' => 'postgres',
-  'password' => 'my_pass',
-  'options' => "'--client_encoding=UTF8'"
-);
-$phpg = new PHPG($params);
-```
-
-<b>Forcing a new connection</b>
-
-```php
-<?php
-require('phpg.php'); // Contains PHPG Class
-
-// Initial instantiation of connection, must pass connection parameters.
-$params = "host=localhost port=5432 dbname=my_db user=postgres password=my_pass options='--client_encoding=UTF8'";
-// Passing optional second parameter as True forces a NEW connection, even if one exists with the connection parameters defined.
-$phpg = new PHPG($params, True);
+// Retrieve existing connection via it's alias:
+$phpg = new PHPG('My DB');
 ```
 
 <b>Performing a query and iterating over the result set</b>
