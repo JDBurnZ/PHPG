@@ -27,7 +27,7 @@ Theoretical Requirements:
 About The Author
 ================
 <b>Written and maintained by:</b>
-* Joshua D. Burns (jdburnz@gmail.com)
+* Joshua D. Burns (josh@messageinaction.com)
 
 <b>Online Presence:</b>
 * Programming BLOG: http://www.youlikeprogramming.com
@@ -53,7 +53,7 @@ require('phpg.php'); // Contains PHPG Class
 
 // Pass a string of connection parameters as described here: http://php.net/manual/en/function.pg-connect.php
 $params = "host=localhost port=5432 dbname=my_db user=postgres password=my_pass options='--client_encoding=UTF8'";
-$phpg = PHPG($params);
+$phpg = new PHPG($params);
 
 // Pass an associative array of connection parameters:
 $params = array(
@@ -64,7 +64,7 @@ $params = array(
   'password' => 'my_pass',
   'options' => "'--client_encoding=UTF8'"
 );
-$phpg = PHPG($params);
+$phpg = new PHPG($params);
 ```
 
 <b>Retrieve an existing PostgreSQL conection</b>
@@ -74,21 +74,21 @@ require('phpg.php'); // Contains PHPG Class
 
 // Initial instantiation of connection, must pass connection parameters.
 $params = "host=localhost port=5432 dbname=my_db user=postgres password=my_pass options='--client_encoding=UTF8'";
-$phpg = PHPG($params);
-$phpg->setAlias('My Connection');
+$phpg = new PHPG($params);
+$phpg->setConnectionAlias('My Connection');
 
 /**
-/* From Another Scope, where $phpg is not accessible...
+/* From Another Scope, where $phpg variable is not accessible...
 **/
 
-// Retrieve existing connection via it's alias, specified above:
-$phpg = PHPG::connectionByAlias('My Connection');
+// Retrieve existing connection via it's alias, as define previously:
+$phpg = PHPG::getConnectionByAlias('My Connection'); // Suggested method of connection retrieval. 
 
-// Retrieve existing connection by passing params as a connection string:
+// Retrieve existing connection by instanting a new object, passing the same connection string parameters used in the original instantiation.
 $params = "host=localhost port=5432 dbname=my_db user=postgres password=my_pass options='--client_encoding=UTF8'";
-$phpg = PHPG::connectionByParams($params);
+$phpg = new PHPG($params);
 
-// Retrieve existing connection by passing params as an associative array:
+// Retrieve existing connection by instanting a new object, passing the same array parameters used in the original instantiation.
 $params = array(
   'host' => 'localhost',
   'port' => '5432',
@@ -97,10 +97,20 @@ $params = array(
   'password' => 'my_pass',
   'options' => "'--client_encoding=UTF8'"
 );
-$phpg = PHPG::connectionByParams($params);
+$phpg = new PHPG($params);
 ```
 
-<i>Note: The reasoning behind retrieving an existing connection via `connectionByParams()` rather than auto-detection of an existing connection when instantiating PHPG, is there may be fringe cases where two separate identical connections to the same data source may be desired.</i>
+<b>Forcing a new connection</b>
+
+```php
+<?php
+require('phpg.php'); // Contains PHPG Class
+
+// Initial instantiation of connection, must pass connection parameters.
+$params = "host=localhost port=5432 dbname=my_db user=postgres password=my_pass options='--client_encoding=UTF8'";
+// Passing optional second parameter as True forces a NEW connection, even if one exists with the connection parameters defined.
+$phpg = new PHPG($params, True);
+```
 
 <b>Performing a query and iterating over the result set</b>
 ```php
@@ -154,7 +164,7 @@ $phpg->execute('update user', "UPDATE users SET first_name = 'Jane' WHERE last_n
 $phpg->commit();
 ```
 
-<i>Note: commit() will commit ALL inserts, updates and deletes on that database connection since the last commit(). rollback() or instantiation. Currently the ability to commit on an alias-by-alias basis is not supported.</i>
+<i>Note: commit() will commit ALL inserts, updates and deletes on that database connection since the last rollback() or commit().</i>
 
 <b>Rolling back one or more changes to the database</b>
 ```php
@@ -169,14 +179,13 @@ $phpg->execute('delete user', "DELETE FROM users WHERE last_name = 'Doe'");
 $phpg->rollback();
 ```
 
-<i>Note: rollback() will undo ALL inserts, updates and deletes on that database connection since the last commit(). Currently, the ability to rollback on an alias-by-alias basis is not supported.</i>
+<i>Note: rollback() will undo ALL inserts, updates and deletes on that database connection since the last rollback or commit().</i>
 
 <b>Performing an insert, update or delete, immediately discarding the result set</b>
 ```php
 <?php
 // Perform the query. Passing Null as the alias will cause the resulting resource to be immediately discarded.
 $phpg->execute(Null, "DELETE FROM users WHERE last_name = 'Smith'");
-
 ```
 
 <b>Performing an insert, update or delete, retrieving the number of affected rows</b>
@@ -191,4 +200,31 @@ $row_count = $phpg->rows_affected('delete users');
 print 'Number of users deleted: ' . $row_count;
 ```
 
-If anyone would like to request for features, please do not hesitate to e-mail me at: jdburnz@gmail.com
+<b>Resetting the internal cursor's pointer after iterating over a result set</b>
+```php
+<?php
+// Assume this query returns two rows, at positions 0 and 1.
+$phpg->execute('grab users', "SELECT first_name, last_name FROM users");
+
+// Grab the first users, which sets the internal cursor's pointer from row 0 to row 1.
+$first_user = $phpg->fetchone('grab users'); // Returns John Smith
+
+// Iterate over the remaining results
+while($phpg->iter('grab users') as $user) {
+  // Returns only Jane Doe
+}
+
+// Set the internal cursor's pointer back to row 0.
+$phpg->reset('grab users');
+
+// Iterate over the entire result set
+while($phpg->iter('grab users') as $user) {
+  // Returns John Smith and Jane Doe
+}
+
+// Set the internal cursor's pointer to a custom position
+$phpg->seek('grab users', 1);
+$user = $phpg->fetchone('grab users'); // Returns Jane Doe
+```
+
+If anyone would like to request for features, please do not hesitate to e-mail me at: josh@messageinaction.com
