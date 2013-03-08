@@ -237,7 +237,7 @@ class PHPG {
 
 		return $result;
 	}
-	
+
 	public function reset($alias) {
 		return $this->seek($alias, 0);
 	}
@@ -252,6 +252,10 @@ class PHPG {
 		$alias = pg_escape_string($alias);
 
 		return $alias;
+	}
+
+	public function escape($string) {
+		return @pg_escape_string($string);
 	}
 
 	public function rowcount($query_alias) {
@@ -505,17 +509,5 @@ class PHPG {
 		}
 
 		return $polygon;
-	}
-
-	public function _cleanse_array($array, $is_array = True) {
-		// If original value isn't array, return original value contained in
-		// first offset of array.
-		if(!$is_array) {
-			return $array[0];
-		}
-
-		foreach($array as $offset => $value) {
-			
-		}
 	}
 }
