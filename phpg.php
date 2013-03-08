@@ -636,4 +636,14 @@ class PHPG {
 	//	Date/Timestamp
 	//	Range
 	//	Text Search
+
+	// TODO: Implement:
+	//	prepare(): Method for ? style replacements in string. Automatic detection of data-types possible?
+	//		Perhaps for arrays, look for presence of "_PHPG_TYPE" key for explicit data type transformations?
+	//		Can detect arrays when PHP array w/ only integer keys
+	//		Can detect hstores when PHP array w/ one or more string keys
+	//		Booleans detected based on data type
+	//		Binary detected based on data type
+	//		All other non-array types shouldn't have to be transformed. They will still need to be escaped, however.
+	//	Third parameter into execute method: data. Acts in same manner as 
 }
