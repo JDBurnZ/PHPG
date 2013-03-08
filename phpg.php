@@ -4,48 +4,78 @@ class PHPG_Exception extends Exception {}
 
 class PHPG {
 	private $connection_alias;
-	private $iterators = array();
 	private $type_transform_mappings = array(
-		'bit' => 'binary',
-		'bool' => 'boolean',
-		'box' => 'geo_box',
-		'bpchar' => Null,
-		'bytea' => 'binary',
-		'cidr' => Null,
-		'circle' => 'geo_circle',
-		'date' => 'datetime',
-		'daterange' => Null,
-		'float4' => 'float',
-		'float8' => 'float',
-		'hstore' => 'hstore',
-		'inet' => Null,
-		'int2' => 'integer',
-		'int4' => 'integer',
-		'int4range' => Null,
-		'int8' => 'integer',
-		'int8range' => Null,
-		'interval' => Null,
-		'json' => 'json',
-		'lseg' => 'geo_lseg',
-		'macaddr' => Null,
-		'money' => 'float',
-		'numeric' => 'float',
-		'numrange' => Null,
-		'path' => 'geo_path',
-		'point' => 'geo_point',
-		'polygon' => 'geo_polygon',
-		'text' => Null,
-		'time' => 'time',
-		'timestamp' => 'datetime',
-		'timestamptz' => 'datetime',
-		'timetz' => 'time',
-		'tsquery' => Null,
-		'tsrange' => Null,
-		'tsvector' => Null,
-		'uuid' => Null,
-		'varbit' => Null,
-		'varchar' => Null,
-		'xml' => 'xml',
+		// * "Null" means do not perform any transformation on the data.
+		// * The function corresponding to the string specified with the
+		// text "_transform_" prepended to it will be called. Ex: "binary"
+		// will call the function _transform_binary().
+
+		# Advanced Data-Types
+		'hstore' => 'hstore', # hstore data-type
+		'json' => 'json', # json data-type
+		'xml' => 'xml', # xml data-type
+
+		# Binary
+		'bit'		=> 'binary', # bit data-type
+		'bytea'		=> 'binary', # bytea data-type
+		'varbit'	=> 'binary', # varbit data-type
+
+		# Boolean
+		'bool'	=> 'boolean', # boolean data-type
+
+		# Date
+		'date'			=> 'datetime', # date data-type
+		'timestamp'		=> 'datetime', # timestamp / timestamp without time zone data-type
+		'timestamptz'	=> 'datetime', # tmestamp with time zone data-type
+
+		# Float
+		'float4'	=> 'float', # ?? data-type
+		'float8'	=> 'float', # ?? data-type
+		'money'		=> 'float', # money data-type
+		'numeric'	=> 'float', # numeric data-type
+
+		# Geometric
+		'box'		=> 'geo_box', # boxz data-type
+		'circle'	=> 'geo_circle', # cicle data-type
+		'lseg'		=> 'geo_lseg', # lseg data-type
+		'line'		=> 'geo_lseg', # line data-type. same syntax as lseg, only creates an infinite line pointing in a the direction defined by x1/y1 and x2/y2 vals.
+		'path'		=> 'geo_path', # path data-type
+		'point'		=> 'geo_point', # point data-type
+		'polygon'	=> 'geo_polygon', # polygon data-type
+
+		# Integer
+		'int2'	=> 'integer', # smallint / smallserial data-type
+		'int4'	=> 'integer', # integer / serial data-type
+		'int8'	=> 'integer', # bigint / bigserial data-type
+
+		# Network
+		'cidr' => Null, # cidr data-type
+		'inet' => Null, # inet data-type
+		'macaddr' => Null, # macaddr data-type
+
+		# Other
+		'uuid' => Null, # uuid data-type
+
+		# Range
+		'daterange'	=> Null, # daterange data-type. TODO. Selecting: '[2013-01-01,2013-09-09]'::daterange Returns: [2013-01-01,2013-09-10). Select using: WHERE '2013-02-02'::date <@ '[2013-01-01,2013-09-09]'::daterange
+		'int4range'	=> Null, # int4range data-type. TODO. Selecting: '[3,5]'::int4range Returns: [3,6). Select using: WHERE 3 <@ '[3,5]'::int4range
+		'int8range'	=> Null, # int8range data-type. TODO. Selecting: '[3,5]'::int4range Returns: [3,6). Select using: WHERE 3 <@ '[3,5]'::int4range
+		'interval'	=> Null, # interval field. TODO. Selecting: '1 month'::interval Returns: 1 mon. Select using: SELECT timestamp '2013-01-01' + val Returns: 2013-02-01 00:00:00
+		'numrange'	=> Null, # numrange data-type. TODO. Selecting '[1.00,2.50]'::numrange Returns: [1.00,2.50]. Select using: WHERE 1.6 <@ val
+
+		# String
+		'bpchar'	=> 'string', # character data-type
+		'text'		=> 'string', # text / character varying (only if character varying field doesn't have a character limit) data-type
+		'varchar'	=> 'string', # character varying data-type (only is character varying field has a character limit.)
+
+		# Text-Search
+		'tsquery' => Null, # tsquery data-type
+		'tsrange' => Null, # tsrange data-type
+		'tsvector' => Null, # tsvector data-type
+
+		# Time
+		'time'		=> 'time', # time / time time without time zone data-type
+		'timetz'	=> 'time', # time with time zone data-type
 	);
 
 	/**
@@ -53,112 +83,134 @@ class PHPG {
 	 * $force_new_connection (boolean): If False (default), will return an existing connection (if one is present) based on the connection parameters passed. If True, will always return a new connection, regardless if one currently exists with the parameters passed.
 	 */
 	public function __construct($connection_alias, $connection_params = False) {
-		$connection_datatype = gettype($connection_params);
-		
 		// Ensure PHPG key exists in GLOBALS variable.
 		if(!array_key_exists('PHPG', $GLOBALS)) {
 			$GLOBALS['PHPG'] = array();
 		}
 
-		if($connection_params === False) { // Retrieve existing connection by connection alias.
+		// Retrieve existing connection by connection alias.
+		if($connection_params === False) {
 			if(array_key_exists($connection_alias, $GLOBALS['PHPG'])) {
 				$this->connection_alias = $connection_alias;
+				return; // Connection found, no reason to continue.
+			} else {
+				throw new PHPG_Exception('Connection alias specified "' . $connection_alias . '" does not exists');
 			}
-			return; // Connection found, no reason to continue.
-		} else if($connection_datatype == 'string') { // String
+		}
+
+		// Grab data type of connection params passed.
+		$connection_datatype = gettype($connection_params);
+
+		if($connection_datatype == 'string') { // String
 			$connection_string = $connection_params;
 		} else if($connection_datatype == 'array') { // Array
 			$connection_string = array();
+
 			if(isset($connection_params['host'])) {
-				$connection_string[] = "host='" . @pg_escape_string($connection_params['host']) . "'";
+				$connection_string[] = "host='" . $this->escape($connection_params['host']) . "'";
 			}
 			if(isset($connection_params['port'])) {
-				$connection_string[] = "port='" . @pg_escape_string($connection_params['port']) . "'";
+				$connection_string[] = "port='" . $this->escape($connection_params['port']) . "'";
 			}
 			if(isset($connection_params['dbname'])) {
-				$connection_string[] = "dbname='" . @pg_escape_string($connection_params['dbname']) . "'";
+				$connection_string[] = "dbname='" . $this->escape($connection_params['dbname']) . "'";
 			}
 			if(isset($connection_params['user'])) {
-				$connection_string[] = "user='" . @pg_escape_string($connection_params['user']) . "'";
+				$connection_string[] = "user='" . $this->escape($connection_params['user']) . "'";
 			}
 			if(isset($connection_params['password'])) {
-				$connection_string[] = "password='" . @pg_escape_string($connection_params['password']) . "'";
+				$connection_string[] = "password='" . $this->escape($connection_params['password']) . "'";
 			}
 			if(isset($connection_params['options'])) {
-				$connection_string[] = "options='" . @pg_escape_string($connection_params['options']) . "'";
+				$connection_string[] = "options='" . $this->escape($connection_params['options']) . "'";
 			}
 			$connection_string = implode(' ', $connection_string);
 		} else { // Invalid data type
-			throw new PHPG_Exception('Invalid conection params. Expecting string or array, encountered "' . $connection_datatype . '"');
+			throw new PHPG_Exception('Expecting connection_params to be string or array, encountered "' . $connection_datatype . '"');
 		}
 
 		// Establish connection if it doesn't currently exist.
-		// If you attempt to create two connections with the same alias, the second connection is ignored, and will continue to use the first alias's connection.
-		if(!array_key_exists($connection_alias, $GLOBALS['PHPG'])) {
+		if(!array_key_exists($connection_alias, $GLOBALS['PHPG'])) { // Connection alias doesn't exist
 			$GLOBALS['PHPG'][$connection_alias] = array(
 				'queries' => array(),
-				'connection' => $this->connect($connection_string)
+				'connection' => $this->_connect($connection_string)
 			);
+		} else { // Connection alias already exists
+			throw new Exception('Cannot create new connection, connection alias "' . $connection_alias . '" already exists');
 		}
 
 		// Set the object's alias for this connection.
 		$this->connection_alias = $connection_alias;
 	}
 
-	private function connect($connection_string) {
+	private function _connect($connection_string) {
+		// Establish connection
 		$connection = pg_connect($connection_string, PGSQL_CONNECT_FORCE_NEW);
 
 		// Allows for commit and rollback operations
 		pg_query($connection, 'BEGIN;');
 
+		// Return connection
 		return $connection;
 	}
 
 	public function execute($query_alias, $query) {
-		$query_alias = $this->sanitize_alias($query_alias, False);
+		$query_alias = $this->_sanitize_alias($query_alias, False);
 
+		// Perform query. Using "@" to supress possible errors being printed,
+		// because we're catching these ourself and throwing exceptions instead.
 		$resource = @pg_query($GLOBALS['PHPG'][$this->connection_alias]['connection'], $query);
 
 		if($resource === False) {
-			throw new PHPG_Exception('An error was encountered with your query: ' . pg_last_error($GLOBALS['PHPG'][$this->connection_alias]['connection']));
+			throw new PHPG_Exception('Error with query: ' . pg_last_error($GLOBALS['PHPG'][$this->connection_alias]['connection']));
 		}
 
-		// If an update or delete is performed, in most cases data will not
-		// be returned. In these cases, we don't care about specifying an
-		// alias.
+		// If an update or delete is performed, in most cases data will not be
+		// returned. In these cases, we don't care about specifying an alias.
 		if($query_alias) {
 			$GLOBALS['PHPG'][$this->connection_alias]['queries'][$query_alias] = array(
 				'resource' => $resource,
 				'current' => False,
 				'row-count' => Null,
-				'rows-affected' => Null
+				'rows-affected' => Null,
+				'executed-query' => $query
 			);
 		}
 		return True;
 	}
 
 	public function rollback() {
-		// TODO: Add error checking
-		pg_query($GLOBALS['PHPG'][$this->connection_alias]['connection'], "ROLLBACK;");
-		pg_query($GLOBALS['PHPG'][$this->connection_alias]['connection'], "BEGIN;");
-		return True;
+		$result = pg_query($GLOBALS['PHPG'][$this->connection_alias]['connection'], "ROLLBACK;");
+		$error = pg_result_error($result);
+		if($error === False) {
+			pg_query($GLOBALS['PHPG'][$this->connection_alias]['connection'], "BEGIN;");
+			return True;
+		}
+		throw new PHPG_Exception('Unable to commit: '. $error);
 	}
 
 	public function commit() {
-		// TODO: Add error checking
-		pg_query($GLOBALS['PHPG'][$this->connection_alias]['connection'], "COMMIT;");
-		pg_query($GLOBALS['PHPG'][$this->connection_alias]['connection'], "BEGIN;");
-		return True;
+		$result = pg_query($GLOBALS['PHPG'][$this->connection_alias]['connection'], "COMMIT;");
+		$error = pg_result_error($result);
+		if($error === False) {
+			pg_query($GLOBALS['PHPG'][$this->connection_alias]['connection'], "BEGIN;");
+			return True;
+		}
 	}
 
 	public function fetchone($query_alias) {
-		// TODO: Add error checking
-		$query_alias = $this->sanitize_alias($query_alias);
+		$query_alias = $this->_sanitize_alias($query_alias);
 		return $this->iter($query_alias);
 	}
 
+	public function executed_query($query_alias) {
+		// Return the exact query passed to PostgreSQL, based on the query alias
+		// passed.
+		return $GLOBALS['PHPG'][$this->connection_alias]['queries'][$query_alias]['executed-query'];
+	}
+
 	public function iter($query_alias) {
-		$query_alias = $this->sanitize_alias($query_alias);
+		$query_alias = $this->_sanitize_alias($query_alias);
 
 		if($GLOBALS['PHPG'][$this->connection_alias]['queries'][$query_alias]['current'] === False) {
 			// Grab fields to determine if we need to do anything special.
@@ -198,7 +250,7 @@ class PHPG {
 			// Grabbing the number of fields advances the cursor. Set the
 			// cursor's pointer back to the beginning.
 			pg_result_seek($GLOBALS['PHPG'][$this->connection_alias]['queries'][$query_alias]['resource'], 0);
-			
+
 			$GLOBALS['PHPG'][$this->connection_alias]['queries'][$query_alias]['current'] = 0;
 		}
 
@@ -210,14 +262,13 @@ class PHPG {
 
 		$result = pg_fetch_assoc($GLOBALS['PHPG'][$this->connection_alias]['queries'][$query_alias]['resource']);
 
-		// Iterate over each field, converting data to PHP native data types
-		// where applicable.
+		// Iterate over each field, converting PostgreSQL field to native PHP
+		// data-types where applicable.
 
 		foreach($result as $column => $row_data) {
 			// Detect PostgreSQL NULL Values
 			if(pg_field_is_null($GLOBALS['PHPG'][$this->connection_alias]['queries'][$query_alias]['resource'], $GLOBALS['PHPG'][$this->connection_alias]['queries'][$query_alias]['current'], $column)) {
 				$result[$column] = Null;
-
 				// Nothing else needs to be done to NULL values, so
 				// immediately continue onto the next field.
 				continue;
@@ -238,23 +289,36 @@ class PHPG {
 		return $result;
 	}
 
+	public function free($query_alias) {
+		// Inform PostgreSQL it can release the result set.
+		pg_free_result($GLOBALS['PHPG'][$this->connection_alias]['queries'][$query_alias]['resource']);
+		// Delete all associated PHP data associated with this result.
+		unset($GLOBALS['PHPG'][$this->connection_alias]['queries'][$query_alias]);
+	}
+
 	public function reset($alias) {
+		// Reset the PostgreSQL cursor's internal pointer to the beginning of
+		// the result set.
 		return $this->seek($alias, 0);
 	}
 
 	public function seek($alias, $row_num) {
-		$alias = $this->sanitize_alias($alias);
+		$alias = $this->_sanitize_alias($alias);
+		// Set the PostgreSQL cursor's internal pointer to the row offset
+		// specified.
 		return pg_result_seek($GLOBALS['PHPG'][$this->connection_alias]['queries'][$query_alias]['connection'], $row_num);
 	}
 
-	private function sanitize_alias($alias, $alias_exists = True) {
+	private function _sanitize_alias($alias) {
+		// Perform any clean up on the aliases want.
 		$alias = strtolower((string) $alias);
-		$alias = pg_escape_string($alias);
-
 		return $alias;
 	}
 
 	public function escape($string) {
+		// Using "@" to supress potential errors from being displayed. This
+		// function likes to complain if being called when no PostgreSQL
+		// connection has yet been established.
 		return @pg_escape_string($string);
 	}
 
@@ -350,37 +414,44 @@ class PHPG {
 		return $value;
 	}
 
+	// Transform Integer Data-Types
 	private function _transform_integer($value, $data_type) {
 		if(gettype($value) == 'array') {
-			$value = array_map('intval', $value);
-		} else {
-			$value = intval($value);
+			return array_map('intval', $value);
 		}
-		return $value;
+		return intval($value);
 	}
 
+	// Transform Float Data-Types
 	private function _transform_float($value, $data_type) {
 		if(gettype($value) == 'array') {
-			$value = array_map('floatval', $value);
-		} else {
-			$value = floatval($value);
+			return array_map('floatval', $value);
 		}
-		return $value;
+		return floatval($value);
 	}
 
+	// Transform Boolean Data-Types
 	private function _transform_boolean($value, $data_type) {
 		if(gettype($value) == 'array') {
-			$value = array_map('boolval', $value);
-		} else {
-			$value = boolval($value);
+			return array_map('boolval', $value);
 		}
-		return $value;
+		return boolval($value);
 	}
 
+	// Transform Binary Data-Types
 	private function _transform_binary($value, $data_type) {
 		return pg_unescape_bytea($value);
 	}
+	
+	// Transform String Data-Types
+	private function _transform_string($value, $data_type) {
+		if(gettype($value) == 'array') {
+			return array_map('strval', $value);
+		}
+		return strval($value);
+	}
 
+	// Transform Time Data-Types
 	private function _transform_time($value, $data_type) {
 		// TODO: What should we do with time? Does PHP have a native Time object?
 		// Example: "time" 15:11:12.370488 (H = 2-digit hour, i = 2-digit minute, s = 2-digit second, u = 6-digit micro-second)
@@ -390,6 +461,7 @@ class PHPG {
 		return $value;
 	}
 
+	// Transform Date Data-Types
 	private function _transform_datetime($value, $data_type) {
 		// Create a DateTime object out of string passed. Time zone is auto-
 		// maritcally calculated from time-zone defined at end of string.
@@ -399,6 +471,7 @@ class PHPG {
 		return $value;
 	}
 
+	// Transform Geometric Box Data-Types
 	private function _transform_geo_box($value, $data_type) {
 		// Example String: ((1,2),(3,4))
 		$value = str_replace('(', '', $value);
@@ -417,6 +490,7 @@ class PHPG {
 		);
 	}
 
+	// Transform Geometric Circle Data-Types
 	private function _transform_geo_circle($value, $data_type) {
 		// Example String: <(1,2),3>
 		$value = str_replace('<', '', $value);
@@ -433,6 +507,7 @@ class PHPG {
 		);
 	}
 
+	// Transform Geometric Line Segment Data-Types
 	private function _transform_geo_lseg($value, $data_type) {
 		// Example String: [(1,2),(3,4)]
 		$value = str_replace('[', '', $value);
@@ -454,6 +529,7 @@ class PHPG {
 		);
 	}
 
+	// Transform Geometric Path Data-Types
 	private function _transform_geo_path($value, $data_type) {
 		$path = array(
 			'path' => array()
@@ -480,7 +556,8 @@ class PHPG {
 
 		return $path;
 	}
-	
+
+	// Transform Geometric Point Data-Types
 	private function _transform_geo_point($value, $data_type) {
 		$value = str_replace('(', '', $value);
 		$value = str_replace(')', '', $value);
@@ -490,14 +567,13 @@ class PHPG {
 			'y' => $value[1]
 		);
 	}
-	
+
+	// Transform Geometric Polygon Data-Types
 	private function _transform_geo_polygon($value, $data_type) {
-		$value = str_replace('', '', $value);
-		$value = str_replace(']', '', $value);
 		$value = explode('),(', $value);
-		
+
 		$polygon = array();
-		
+
 		foreach($value as $polygon_part) {
 			$polygon_part = str_replace('(', '', $polygon_part);
 			$polygon_part = str_replace(')', '', $polygon_part);
@@ -510,4 +586,54 @@ class PHPG {
 
 		return $polygon;
 	}
+
+	/**
+	 * VARIOUS METHODS FOR TRANSFORMING PHP NATIVE DATA-TYPES TO POSTGRESQL.
+	 * AUTOMATICALLY ESCAPES VALUES, SO NO REASON TO PASS TO escape() METHOD.
+	 */
+
+	// PHP Array to PostgreSQL Array.
+	public function transform_array($array, $data_type) {
+		$transform_fn = 'transform_' . $data_type;
+		$return = array();
+		foreach($array as $index => $value) {
+			$return[] = $this->escape($this->$transform_fn($value));
+		}
+		return implode('", "', $return);
+	}
+
+	// PHP Associative Array to PostgreSQL Hstore.
+	public function transform_hstore($array) {
+		$return = array();
+		foreach($array as $key => $value) {
+			$return[] = '"' . $this->escape($key) . '"=>"' . $this->escape($key) . '"';
+		}
+		return implode(', ', $return);
+	}
+
+	// PHP Boolean to PostgreSQL Boolean.
+	public function transform_boolean($boolean) {
+		return $boolean === True ? 't' : 'f';
+	}
+
+	// PHP Array to PostgreSQL JSON.
+	public function transform_json($array) {
+		return $this->escape(json_encode($array));
+	}
+
+	// PHP String to PostgreSQL Text.
+	public function transform_string($string) {
+		return $this->escape($string);
+	}
+
+	// PHP Binary to PostgreSQL ByteA.
+	public function transform_binary($binary) {
+		return pg_escape_bytea($GLOBALS['PHPG'][$this->connection_alias]['connection'], $binary);
+	}
+
+	// TODO: Transformation methods for:
+	//	Geometric
+	//	Date/Timestamp
+	//	Range
+	//	Text Search
 }
