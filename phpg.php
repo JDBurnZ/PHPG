@@ -203,6 +203,15 @@ class PHPG {
 		return $this->iter($query_alias);
 	}
 
+	public function fetchall($query_alias) {
+		$query_alias = $this->_sanitize_alias($query_alias);
+		$data = array();
+		while($row = $this->iter($query_alias)) {
+			$data[] = $row;
+		}
+		return $data;
+	}
+
 	public function executed_query($query_alias) {
 		// Return the exact query passed to PostgreSQL, based on the query alias
 		// passed.
@@ -365,12 +374,27 @@ class PHPG {
 	}
 
 	private function _transform_hstore($value, $data_type) {
-		$return = array();
-		$grab_hstore = pg_query($GLOBALS['PHPG'][$this->connection_alias]['connection'], "SELECT key, value FROM EACH('" . pg_escape_string($value) . "'::hstore)");
-		while($hstore = pg_fetch_assoc($grab_hstore)) {
-			$return[$hstore['key']] = $hstore['value'];
+		// Support for arrays of hstores. If not array, put into array so we can
+		// run same codeon array and non-array hstores
+		$is_array = gettype($value) == 'array' ? True : False;
+		if(!$is_array) {
+			$value = array($value);
 		}
-		return $return;
+
+		// Perform hstore transformations.
+		foreach($value as $offset => $hstore_str) {
+			$grab_hstore = pg_query($GLOBALS['PHPG'][$this->connection_alias]['connection'], "SELECT key, value FROM EACH('" . pg_escape_string($hstore_str) . "'::hstore)");
+			$value[$offset] = array();
+			while($hstore = pg_fetch_assoc($grab_hstore)) {
+				$value[$offset][$hstore['key']] = $hstore['value'];
+			}
+		}
+
+		// Return based on whether this hstors is an array or not.
+		if(!$is_array) {
+			return $value[0];
+		}
+		return $value;
 	}
 
 	private function _transform_json($value, $data_type) {
@@ -597,6 +621,7 @@ class PHPG {
 		$transform_fn = 'transform_' . $data_type;
 		$return = array();
 		foreach($array as $index => $value) {
+			$value = str_replace("\"", "\\\"", $value);
 			$return[] = $this->escape($this->$transform_fn($value));
 		}
 		return implode('", "', $return);
@@ -606,7 +631,8 @@ class PHPG {
 	public function transform_hstore($array) {
 		$return = array();
 		foreach($array as $key => $value) {
-			$return[] = '"' . $this->escape($key) . '"=>"' . $this->escape($key) . '"';
+			$value = str_replace("\"", "\\\"", $value);
+			$return[] = '"' . $this->escape($key) . '"=>"' . $this->escape($value) . '"';
 		}
 		return implode(', ', $return);
 	}
