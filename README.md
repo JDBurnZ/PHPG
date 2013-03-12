@@ -166,6 +166,22 @@ $user_1 = $cursor->fetchone();
 $user_2 = $cursor->fetchone();
 ```
 
+<b>Perform a query, and retrieve all of the rows in a single array</b>
+```php
+<?php
+require('phpg.php'); // Contains PHPG Class
+$params = "host=localhost dbname=my_db user=postgres password=my_pass";
+$phpg = new PHPG('My DB', $params); // Instantiate a PostgreSQL connection
+$cursor = $phpg->cursor(); // Create a cursor
+
+// Perform the query
+$cursor->execute("SELECT first_name, last_name FROM users ORDER BY last_name, first_name");
+
+// Grab the entire result set (returns an array of associative arrays).
+// NOTICE! If you're returning a lot of data this can very easily exhaust your working memory.
+$users = $cursor->fetchall();
+```
+
 <b>Commit one or more changes</b>
 ```php
 <?php
@@ -251,4 +267,24 @@ $cursor->seek(1);
 
 $user4 = $cursor->fetchone(); // Grab second row again
 $user5 = $cursor->fetchone(); // Grab third row again
+```
+
+<b>Free a result set once it's no longer needed</b>
+```php
+<?php
+require('phpg.php'); // Contains PHPG Class
+$params = "host=localhost dbname=my_db user=postgres password=my_pass";
+$phpg = new PHPG('My DB', $params); // Instantiate a PostgreSQL connection
+$cursor = $phpg->cursor(); // Create a cursor
+
+// Perform a query
+$cursor->execute("SELECT * FROM users");
+
+// Iterate over the results
+while($user = $cursor->iter()) {
+  // do something
+}
+
+// Free the result set, because we have no further need for it.
+$cursor->free();
 ```
