@@ -85,7 +85,7 @@ $phpg = new PHPG('My DB', $params);
 $phpg = new PHPG('My DB');
 ```
 
-<b>Create a new Pointer</b>
+<b>Create a new Cursor</b>
 ```php
 <?php
 require('phpg.php'); // Contains PHPG Class
