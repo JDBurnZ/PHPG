@@ -1,12 +1,14 @@
 <?php
 
 /**
- * Author: Joshua D. Burns <josh@messageinaction.com>
- * Web Site: http://www.youlikeprogramming.com
- * Project on Git Hub: http://github.com/JDBurnZ/PHPG
+ * Author: Joshua D. Burns
+ *         jdburnz@gmail.com
+ *         josh@messageinaction.com
+ *         http://www.youlikeprogramming.com
+ *         http://www.messageinaction.com
+ * For examples and documentation, visit: http://github.com/JDBurnZ/PHPG
  *
  * LICENSE:
- *
  * This is free and unencumbered software released into the public domain.
  *
  * Anyone is free to copy, modify, publish, use, compile, sell, or
