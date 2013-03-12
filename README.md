@@ -6,29 +6,28 @@ A PostgreSQL database interface class written in PHP specifically designed to co
 Much of the underlying functionality utilizes PHP's native PostgreSQL driver to maintain performance and reliability.
 
 <b>Features</b>
-* Automatic detection and transformation of most PostgreSQL data-types (such as Integers, Floats, Booleans, NULLs, Arrays, Hstores, etc) to native PHP data structures.
-* Transaction-style deletes, updates and inserts.
-* Global database connection storage, easily retrieve existing connections from any scope.
+* Automatic detection and transformation of most PostgreSQL data-types to native PHP data structures. Includes Integers, Floats, Booleans, NULLs, Arrays, Hstores, Geometrical Types, and more!
+* Transaction-style database cursors, with commit and rollback functionality.
+* Superglobal database connections: Retrieve existing database connections from any scope.
 
-<b>More on Automatic Detection & Transformation of PostgreSQL data-types</b>
-* PostgreSQL Arrays (ANY data-type) to native PHP Arrays.
-* PostgreSQL Hstores to native PHP Associative Arrays.
-* PostgreSQL Geometric data-types (lseg, point, polygon, etc) to native PHP Arrays.
-* PostgreSQL Dates / Timestamps to native PHP DateTime Objects.
-* ... And many more!
+<b>More on Automatic Detection & Transformation of PostgreSQL Data-Types</b>
+* PostgreSQL Arrays (any data-type) to PHP Arrays.
+* PostgreSQL Hstores to PHP Associative Arrays.
+* PostgreSQL Geometric Data-Types (box, point, polygon, lseg, etc) to native PHP Associative Arrays.
+* PostgreSQL Dates / Timestamps to native PHP DateTime Objects (including automatic detection of Time Zones).
+* ... And much more!
 
 <b>Requirements</b>
-
-Need to perform more testing, and create solid minimal requirements. Currently developed and tested on PHP 5.4 and PostgreSQL 9.2.
-
-Theoretical Requirements:
-* PostgreSQL 6.5 or later. 8.0 or later for full PostgreSQL feature support.
-* PHP 5.0 or later.
+* PHP: 5.0 or later
+* PostgreSQL: 8.0 or later
+* PostgreSQL Contrib Modules (Optional) : hstore, PostGIS (PostgreSQL 8.x, built into 9.x)
 
 About The Author
 ================
 <b>Written and maintained by:</b>
-* Joshua D. Burns (josh@messageinaction.com)
+* Joshua D. Burns
+* <jdburnz@gmail.com>, <josh@messageinaction.com>
+* http://www.messageinaction.com
 
 <b>Online Presence:</b>
 * Programming BLOG: http://www.youlikeprogramming.com
@@ -38,6 +37,7 @@ About The Author
 <b>Background</b>
 * Co-Founder and Director of Technology at Message In Action (http://www.messageinaction.com).
 * Specializes in large-scale, high performance eCommerce and inventory management systems.
+* Entrepreneur, Strategist, Political Enthusiast and Project Manager.
 
 <b>Qualifications</b>
 * 5+ years experience in Project Management
@@ -47,12 +47,12 @@ About The Author
 Quick Start Guide / Tutorial
 ============================
 
-<b>Instantiating a connection to PostgreSQL</b>
+<b>Instantiate a new PostgreSQL connection</b>
 ```php
 <?php
 require('phpg.php'); // Contains PHPG Class
 
-// Pass a string of connection parameters as described here: http://php.net/manual/en/function.pg-connect.php
+// Pass a string of connection parameters as described in here: http://php.net/manual/en/function.pg-connect.php
 $params = "host=localhost port=5432 dbname=my_db user=postgres password=my_pass options='--client_encoding=UTF8'";
 $phpg = new PHPG('My DB', $params);
 
@@ -68,136 +68,187 @@ $params = array(
 $phpg = new PHPG('My DB', $params);
 ```
 
-<b>Retrieve an existing PostgreSQL conection</b>
+<b>Retrieve an existing PostgreSQL conection (from any scope)</b>
 ```php
 <?php
 require('phpg.php'); // Contains PHPG Class
 
-// Initial instantiation of connection, must pass connection parameters.
-$params = "host=localhost port=5432 dbname=my_db user=postgres password=my_pass options='--client_encoding=UTF8'";
+// Initial instantiation of connection:
+$params = "host=localhost dbname=my_db user=postgres password=my_pass";
 $phpg = new PHPG('My DB', $params);
 
 /**
-/* From Another Scope, where $phpg variable is not accessible...
+/* From Another Scope, where $phpg database connection is not accessible...
 **/
 
-// Retrieve existing connection via it's alias:
+// Retrieve existing connection via it's connection alias:
 $phpg = new PHPG('My DB');
 ```
 
-<b>Performing a query and iterating over the result set</b>
+<b>Create a new Pointer</b>
 ```php
 <?php
-// Perform the query
-$phpg->execute('grab users', "SELECT first_name, last_name FROM users ORDER BY last_name, first_name");
+require('phpg.php'); // Contains PHPG Class
+$params = "host=localhost dbname=my_db user=postgres password=my_pass";
+$phpg = new PHPG('My DB', $params); // Instantiate a PostgreSQL connection
 
-// Iterating over the result set using `while`:
-while($user = $phpg->iter('grab users')) {
-  print $user['first_name'] . ' ' . $user['last_name'] . '<br />';
+// Create a cursor from which we can execute queries:
+$cursor = $phpg->cursor();
+```
+
+<b>Perform a query and iterate over the result set</b>
+```php
+<?php
+require('phpg.php'); // Contains PHPG Class
+$params = "host=localhost dbname=my_db user=postgres password=my_pass";
+$phpg = new PHPG('My DB', $params); // Instantiate a PostgreSQL connection
+$cursor = $phpg->cursor(); // Create a cursor
+
+// Perform the query
+$cursor->execute("SELECT first_name, last_name FROM users ORDER BY last_name, first_name");
+
+// Iterate over the result set using `while` syntax:
+while($user = $cursor->iter()) {
+  // do something
 }
 
-// Iterating over the result set using `foreach` (not yet implemented):
-foreach($php->iter('grab users') as $index => $user) {
-  print $user['first_name'] . ' ' . $user['last_name'] . '<br />';
+// Iterate over the result set using `foreach` syntax (not yet implemented):
+foreach($cursor as $offset => $user) {
+  // do something
 }
 ```
 
-<b>Performing a query and retrieving the number of rows returned in the result set</b>
+<b>Perform a query, and retrieve the number of rows returned (used for SELECT and RETURNING statements)</b>
 ```php
 <?php
+require('phpg.php'); // Contains PHPG Class
+$params = "host=localhost dbname=my_db user=postgres password=my_pass";
+$phpg = new PHPG('My DB', $params); // Instantiate a PostgreSQL connection
+$cursor = $phpg->cursor(); // Create a cursor
+
 // Perform the query:
-$phpg->execute('grab users', "SELECT first_name, last_name FROM users ORDER BY last_name, first_name");
+$cursor->execute("SELECT first_name, last_name FROM users ORDER BY last_name, first_name");
+
 // Retrieve the number of rows returned by the query:
-$num_results = $phpg->rowcount('grab users');
-// Print the number:
-print 'Number of users found: ' . $num_results;
+$num_results = $cursor->rows_returned();
 ```
 
-<b>Performing a query and grabbing a single result from the result set</b>
+<b>Perform a query, and retrieve the number of rows affected (used for INSERT, UPDATE and DELETE statements)</b>
 ```php
 <?php
+require('phpg.php'); // Contains PHPG Class
+$params = "host=localhost dbname=my_db user=postgres password=my_pass";
+$phpg = new PHPG('My DB', $params); // Instantiate a PostgreSQL connection
+$cursor = $phpg->cursor(); // Create a cursor
+
+// Perform the query:
+$cursor->execute("DELETE FROM users WHERE last_name = 'Doe'");
+
+// Retrieve the number of rows affected by the query:
+$num_results = $cursor->rows_affected();
+```
+
+<b>Perform a query, and retrieve a single row from the result set</b>
+```php
+<?php
+require('phpg.php'); // Contains PHPG Class
+$params = "host=localhost dbname=my_db user=postgres password=my_pass";
+$phpg = new PHPG('My DB', $params); // Instantiate a PostgreSQL connection
+$cursor = $phpg->cursor(); // Create a cursor
+
 // Perform the query
-$phpg->execute('grab users', "SELECT first_name, last_name FROM users ORDER BY last_name, first_name");
-// Grab the first row (advances the cursor from position 0 to position 1)
-$user_1 = $phpg->fetchone('grab users');
-// Grab the second row (advances the cursor from position 1 to position 2)
-$user_2 = $phpg->fetchone('grab users');
+$cursor->execute("SELECT first_name, last_name FROM users ORDER BY last_name, first_name");
+
+// Grab a row (returns row 0, and advances the cursor from row 0 to row 1)
+$user_1 = $cursor->fetchone();
+
+// Grab another row (returns row 1, and advances the cursor from row 1 to row 2)
+$user_2 = $cursor->fetchone();
 ```
 
-<b>Committing one or more changes to the database</b>
+<b>Commit one or more changes</b>
 ```php
 <?php
-// Insert a record
-$phpg->execute('insert user', "INSERT INTO users (first_name, last_name) VALUES ('John', 'Smith')");
+require('phpg.php'); // Contains PHPG Class
+$params = "host=localhost dbname=my_db user=postgres password=my_pass";
+$phpg = new PHPG('My DB', $params); // Instantiate a PostgreSQL connection
+$first_cursor = $phpg->cursor(); // Create a cursor
+$second_cursor = $phpg->cursor(); // Create another cursor
+
+// Insert a couple records
+$first_cursor->execute("INSERT INTO users (first_name, last_name) VALUES ('John', 'Smith')");
+$second_cursor->execute("INSERT INTO users (first_name, last_name) VALUES ('Janet', 'Johnson')");
 
 // Update a record
-$phpg->execute('update user', "UPDATE users SET first_name = 'Jane' WHERE last_name = 'Doe'");
+$first_cursor->execute("UPDATE users SET first_name = 'Jane' WHERE last_name = 'Doe'");
 
-// Commit all actions up to this point. This will commit both the INSERT and UPDATE.
+// Commit all actions, across all the database connection's cursors, up to this point.
 $phpg->commit();
 ```
 
-<i>Note: commit() will commit ALL inserts, updates and deletes on that database connection since the last rollback() or commit().</i>
+<i>Note: commit() will commit *all* INSERT, UPDATE, DELETE, ALTER, CREATE, DROP, etc actions made across all of the database connection's cursors since the last rollback() or commit() was performed.</i>
 
-<b>Rolling back one or more changes to the database</b>
+<b>Rollback one or more changes</b>
 ```php
 <?php
-// Insert a record
-$phpg->execute('insert user', "INSERT INTO users (first_name, last_name) VALUES ('John', 'Smith')");
+require('phpg.php'); // Contains PHPG Class
+$params = "host=localhost dbname=my_db user=postgres password=my_pass";
+$phpg = new PHPG('My DB', $params); // Instantiate a PostgreSQL connection
+$first_cursor = $phpg->cursor(); // Create a cursor
+$second_cursor = $phpg->cursor(); // Create another cursor
 
-// Delete a record
-$phpg->execute('delete user', "DELETE FROM users WHERE last_name = 'Doe'");
+// Insert a couple records
+$first_cursor->execute("INSERT INTO users (first_name, last_name) VALUES ('John', 'Smith')");
+$second_cursor->execute("INSERT INTO users (first_name, last_name) VALUES ('Janet', 'Johnson')");
 
-// Roll back all actions since the last commit() or rollback(), or instantiation. This will rollback both the insert and delete in this example.
+// Update a record
+$first_cursor->execute("UPDATE users SET first_name = 'Jane' WHERE last_name = 'Doe'");
+
+// Roll back all actions, across all the database connection's cursors, up to this point.
 $phpg->rollback();
 ```
 
-<i>Note: rollback() will undo ALL inserts, updates and deletes on that database connection since the last rollback or commit().</i>
+<i>Note: rollback() will rollback *all* INSERT, UPDATE, DELETE, ALTER, CREATE, DROP, etc actions made across all of the database connection's cursors since the last rollback() or commit() was performed</i>
 
-<b>Performing an insert, update or delete, immediately discarding the result set</b>
+<b>Reset the cursor's pointer to the beginning of the result set</b>
 ```php
 <?php
-// Perform the query. Passing Null as the alias will cause the resulting resource to be immediately discarded.
-$phpg->execute(Null, "DELETE FROM users WHERE last_name = 'Smith'");
+require('phpg.php'); // Contains PHPG Class
+$params = "host=localhost dbname=my_db user=postgres password=my_pass";
+$phpg = new PHPG('My DB', $params); // Instantiate a PostgreSQL connection
+$cursor = $phpg->cursor(); // Create a cursor
+
+// Perform a query
+$cursor->execute("SELECT * FROM users");
+
+$user1 = $cursor->fetchone(); // Grab the first row
+$user2 = $cursor->fetchone(); // Grab the second row
+
+// Reset the cursor, setting it's internal pointer back to row zero
+$cursor->seek(1);
+
+$user3 = $cursor->fetchone(); // Grab first row again
+$user4 = $cursor->fetchone(); // Grab second row again
 ```
 
-<b>Performing an insert, update or delete, retrieving the number of affected rows</b>
+<b>Set the cursor's pointer to a specific offset</b>
 ```php
 <?php
-// Perform the query. Passing a string as the alias will cause the resulting resource to be stored, from which you can then access information such as iterating over the result set, and accessing rows returned (for SELECTs), and affected rows (for INSERTs, UPDATEs, DELETEs).
-$phpg->execute('delete users', "DELETE FROM users WHERE last_name = 'Smith'");
+require('phpg.php'); // Contains PHPG Class
+$params = "host=localhost dbname=my_db user=postgres password=my_pass";
+$phpg = new PHPG('My DB', $params); // Instantiate a PostgreSQL connection
+$cursor = $phpg->cursor(); // Create a cursor
 
-// Retrieve the number of rows affected by this action:
-$row_count = $phpg->rows_affected('delete users');
+// Perform a query
+$cursor->execute("SELECT * FROM users");
 
-print 'Number of users deleted: ' . $row_count;
+$user1 = $cursor->fetchone(); // Grab the first row
+$user2 = $cursor->fetchone(); // Grab the second row
+$user3 = $cursor->fetchone(); // Grab the third row
+
+// Set the cursor's pointer back to row 2 (offsets start at zero, so 0 = first row, 1 = second row etc)
+$cursor->seek(1);
+
+$user4 = $cursor->fetchone(); // Grab second row again
+$user5 = $cursor->fetchone(); // Grab third row again
 ```
-
-<b>Resetting the internal cursor's pointer after iterating over a result set</b>
-```php
-<?php
-// Assume this query returns two rows, at positions 0 and 1.
-$phpg->execute('grab users', "SELECT first_name, last_name FROM users");
-
-// Grab the first users, which sets the internal cursor's pointer from row 0 to row 1.
-$first_user = $phpg->fetchone('grab users'); // Returns John Smith
-
-// Iterate over the remaining results
-while($phpg->iter('grab users') as $user) {
-  // Returns only Jane Doe
-}
-
-// Set the internal cursor's pointer back to row 0.
-$phpg->reset('grab users');
-
-// Iterate over the entire result set
-while($phpg->iter('grab users') as $user) {
-  // Returns John Smith and Jane Doe
-}
-
-// Set the internal cursor's pointer to a custom position
-$phpg->seek('grab users', 1);
-$user = $phpg->fetchone('grab users'); // Returns Jane Doe
-```
-
-If anyone would like to request for features, please do not hesitate to e-mail me at: josh@messageinaction.com
