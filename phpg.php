@@ -1,14 +1,12 @@
 <?php
 
 /**
- * Author: Joshua D. Burns
- *         jdburnz@gmail.com
- *         josh@messageinaction.com
- *         http://www.youlikeprogramming.com
- *         http://www.messageinaction.com
- * For examples and documentation, visit: http://github.com/JDBurnZ/PHPG
+ * Author: Joshua D. Burns <josh@messageinaction.com>
+ * Web Site: http://www.youlikeprogramming.com
+ * Project on Git Hub: http://github.com/JDBurnZ/PHPG
  *
  * LICENSE:
+ *
  * This is free and unencumbered software released into the public domain.
  *
  * Anyone is free to copy, modify, publish, use, compile, sell, or
@@ -445,8 +443,15 @@ class PHPG_Cursor {
 	public function free() {
 		// Inform PostgreSQL it can release the result set.
 		pg_free_result($GLOBALS['PHPG'][$this->connection_alias]['cursors'][$this->cursor_id]['resource']);
-		// Delete all associated PHP data associated with this result.
-		unset($GLOBALS['PHPG'][$this->connection_alias]['cursors'][$this->cursor_id]);
+
+		// Clear all PHP data associated with this result.
+		$GLOBALS['PHPG'][$this->connection_alias]['cursors'][$this->cursor_id] = array(
+			'resource' => Null,
+			'current' => False,
+			'rows-returned' => Null,
+			'rows-affected' => Null,
+			'last-query' => Null
+		);
 	}
 
 	public function reset() {
