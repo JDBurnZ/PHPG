@@ -225,7 +225,7 @@ $user1 = $cursor->fetchone(); // Grab the first row
 $user2 = $cursor->fetchone(); // Grab the second row
 
 // Reset the cursor, setting it's internal pointer back to row zero
-$cursor->seek(1);
+$cursor->reset();
 
 $user3 = $cursor->fetchone(); // Grab first row again
 $user4 = $cursor->fetchone(); // Grab second row again
