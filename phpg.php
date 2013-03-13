@@ -729,10 +729,13 @@ class PHPG_Cursor {
 		return $polygon;
 	}
 
-	/**
-	 * VARIOUS METHODS FOR TRANSFORMING PHP NATIVE DATA-TYPES TO POSTGRESQL.
-	 * AUTOMATICALLY ESCAPES VALUES, SO NO REASON TO PASS TO escape() METHOD.
-	 */
+	/***********************************************************************\
+	*                                                                       *
+	*    TRANSFORMATION METHODS TO CONVERT PHP DATA-TYPES TO POSTGRESQL-    *
+	*    SAFE DATA-TYPES WHCIH ARE RETURNED ALREADY ESCAPED, AND READY      *
+	*    FOR INSERT.                                                        *
+	*                                                                       *
+	\***********************************************************************/
 
 	// PHP Array to PostgreSQL Array.
 	public function transform_array($array, $data_type) {
