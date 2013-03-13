@@ -96,10 +96,10 @@ class PHPG {
 
 		# Range
 		'daterange' => Null, # daterange data-type. TODO. Selecting: '[2013-01-01,2013-09-09]'::daterange Returns: [2013-01-01,2013-09-10). Select using: WHERE '2013-02-02'::date <@ '[2013-01-01,2013-09-09]'::daterange
-		'int4range' => Null, # int4range data-type. TODO. Selecting: '[3,5]'::int4range Returns: [3,6). Select using: WHERE 3 <@ '[3,5]'::int4range
-		'int8range' => Null, # int8range data-type. TODO. Selecting: '[3,5]'::int4range Returns: [3,6). Select using: WHERE 3 <@ '[3,5]'::int4range
+		'int4range' => 'range', # int4range data-type. TODO. Selecting: '[3,5]'::int4range Returns: [3,6). Select using: WHERE 3 <@ '[3,5]'::int4range
+		'int8range' => 'range', # int8range data-type. TODO. Selecting: '[3,5]'::int4range Returns: [3,6). Select using: WHERE 3 <@ '[3,5]'::int4range
 		'interval'  => Null, # interval field. TODO. Selecting: '1 month'::interval Returns: 1 mon. Select using: SELECT timestamp '2013-01-01' + val Returns: 2013-02-01 00:00:00
-		'numrange'  => Null, # numrange data-type. TODO. Selecting '[1.00,2.50]'::numrange Returns: [1.00,2.50]. Select using: WHERE 1.6 <@ val
+		'numrange'  => 'range', # numrange data-type. TODO. Selecting '[1.00,2.50]'::numrange Returns: [1.00,2.50]. Select using: WHERE 1.6 <@ val
 
 		# String
 		'bpchar'  => 'string', # character data-type
@@ -266,52 +266,6 @@ class PHPG {
 
 		// Return the newly instantiated cursor.
 		return $cursor;
-	}
-
-	/**
-	 * VARIOUS METHODS FOR TRANSFORMING PHP NATIVE DATA-TYPES TO POSTGRESQL.
-	 * AUTOMATICALLY ESCAPES VALUES, SO NO REASON TO PASS TO escape() METHOD.
-	 */
-
-	// PHP Array to PostgreSQL Array.
-	public static function transform_array($array, $data_type) {
-		$transform_fn = 'transform_' . $data_type;
-		$return = array();
-		foreach($array as $index => $value) {
-			$value = str_replace("\"", "\\\"", $value);
-			$return[] = $this->escape($this->$transform_fn($value));
-		}
-		return implode('", "', $return);
-	}
-
-	// PHP Associative Array to PostgreSQL Hstore.
-	public static function transform_hstore($array) {
-		$return = array();
-		foreach($array as $key => $value) {
-			$value = str_replace("\"", "\\\"", $value);
-			$return[] = '"' . $this->escape($key) . '"=>"' . $this->escape($value) . '"';
-		}
-		return implode(', ', $return);
-	}
-
-	// PHP Boolean to PostgreSQL Boolean.
-	public static function transform_boolean($boolean) {
-		return $boolean === True ? 't' : 'f';
-	}
-
-	// PHP Array to PostgreSQL JSON.
-	public static function transform_json($array) {
-		return $this->escape(json_encode($array));
-	}
-
-	// PHP String to PostgreSQL Text.
-	public static function transform_string($string) {
-		return $this->escape($string);
-	}
-
-	// PHP Binary to PostgreSQL ByteA.
-	public static function transform_binary($binary) {
-		return pg_escape_bytea($GLOBALS['PHPG'][$this->connection_alias]['connection'], $binary);
 	}
 }
 
@@ -643,6 +597,22 @@ class PHPG_Cursor {
 		return $value;
 	}
 
+	// Transform Numeric and Integer Data-Types
+	private function _transform_range($value, $data_type) {
+		$value = str_replace(']', '', $value);
+		$value = str_replace('[', '', $value);
+		$parts = explode(',', $value);
+
+		if($data_type == 'numrange') {
+			$parts[0] = floatval($parts[0]);
+			$parts[1] = floatval($parts[1]);
+		} else { // int4range or int8range
+			$parts[0] = intval($parts[0]);
+			$parts[1] = intval($parts[1]);
+		}
+		return $parts;
+	}
+
 	// Transform Geometric Box Data-Types
 	private function _transform_geo_box($value, $data_type) {
 		// Example String: ((1,2),(3,4))
@@ -757,5 +727,51 @@ class PHPG_Cursor {
 		}
 
 		return $polygon;
+	}
+
+	/**
+	 * VARIOUS METHODS FOR TRANSFORMING PHP NATIVE DATA-TYPES TO POSTGRESQL.
+	 * AUTOMATICALLY ESCAPES VALUES, SO NO REASON TO PASS TO escape() METHOD.
+	 */
+
+	// PHP Array to PostgreSQL Array.
+	public function transform_array($array, $data_type) {
+		$transform_fn = 'transform_' . $data_type;
+		$return = array();
+		foreach($array as $index => $value) {
+			$value = $this->$transform_fn($value);
+			$return[] = str_replace("\"", "\\\"", $value);
+		}
+		return $this->escape(implode('", "', $return));
+	}
+
+	// PHP Associative Array to PostgreSQL Hstore.
+	public function transform_hstore($array) {
+		$return = array();
+		foreach($array as $key => $value) {
+			$value = str_replace("\"", "\\\"", $value);
+			$return[] = '"' . str_replace("\"", "\\\"", $key) . '"=>"' . str_replace("\"", "\\\"", $value) . '"';
+		}
+		return $this->escape(implode(', ', $return));
+	}
+
+	// PHP Boolean to PostgreSQL Boolean.
+	public function transform_boolean($boolean) {
+		return $boolean === True ? 't' : 'f';
+	}
+
+	// PHP Array to PostgreSQL JSON.
+	public function transform_json($array) {
+		return $this->escape(json_encode($array));
+	}
+
+	// PHP String to PostgreSQL Text.
+	public function transform_string($string) {
+		return $this->escape($string);
+	}
+
+	// PHP Binary to PostgreSQL ByteA.
+	public function transform_binary($binary) {
+		return pg_escape_bytea($GLOBALS['PHPG'][$this->connection_alias]['connection'], $binary);
 	}
 }
