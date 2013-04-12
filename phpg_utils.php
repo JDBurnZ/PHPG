@@ -65,26 +65,22 @@ class PHPG_Utils {
 		return $pg_hstore;
 	}
 
-	private static function _hstoreFromPhpHelper($php_hstore) {
-		$pg_hstore = '';
-		foreach($php_hstore as $hstore_key => $hstore_value) {
-			// If hstore string is not empty, append a comma.
-			if($pg_hstore) {
-				$pg_hstore .= ',';
-			}
+	private static function _hstoreFromPhpHelper(array $php_hstore) {
+        $pg_hstore = array();
 
-			// PostgreSQL Hstore Keys MUST be strings.
-			$pg_hstore .= '"' . str_replace('"', '\\"', strval($hstore_key)) . '"=>';
+        foreach ($php_hstore as $key => $val) {
+            $search = array('\\', "'", '"');
+            $replace = array('\\\\', "''", '\"');
 
-			if($hstore_value === Null) {
-				// Allow for PostgreSQL NULL values.
-				$pg_hstore .= 'NULL';
-			} else {
-				// All non-NULL values MUST be strings.
-				$pg_hstore .= '"' . str_replace('"', '\\"', strval($hstore_value)) . '"';
-			}
-		}
-		return $pg_hstore;
+            $key = str_replace($search, $replace, $key);
+            $val = $val === NULL
+                 ? 'NULL'
+                 : '"'.str_replace($search, $replace, $val).'"';
+
+            $pg_hstore[] = sprintf('"%s"=>%s', $key, $val);
+        }
+
+        return sprintf("'%s'::hstore", implode(',', $pg_hstore));
 	}
 
 	/***********************************\
@@ -108,14 +104,29 @@ class PHPG_Utils {
 	}
 
 	private static function _hstoreToPhpHelper($string) {
-		$array = array();
-		$grab_hstore = pg_query("SELECT key, value FROM EACH('" . pg_escape_string($string) . "'::hstore)");
+        if (!$string || !preg_match_all('/"(.+)(?<!\\\)"=>(NULL|""|".+(?<!\\\)"),?/U', $string, $match, PREG_SET_ORDER))
+            return array();
 
-		while($hstore = pg_fetch_assoc($grab_hstore)) {
-			$array[$hstore['key']] = $hstore['value'];
-		}
+        $array = array();
 
-		return $array;
+        foreach ($match as $set) {
+            list(, $k, $v) = $set;
+
+            $v = $v === 'NULL'
+               ? NULL
+               : substr($v, 1, -1);
+
+            $search = array('\"', '\\\\');
+            $replace = array('"', '\\');
+
+            $k = str_replace($search, $replace, $k);
+            if ($v !== NULL)
+                $v = str_replace($search, $replace, $v);
+
+            $array[$k] = $v;
+        }
+
+        return $array;
 	}
 
 	/**********************************\
