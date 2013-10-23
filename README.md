@@ -1,26 +1,26 @@
 PHPG
 ====
 
-A PostgreSQL database interface class written in PHP specifically designed to confront and resolve a majority of long-standing issues with PHP's native PostgreSQL driver.
+A PostgreSQL database interface written in PHP specifically designed to confront and resolve a majority of long-standing issues with PHP's native PostgreSQL driver.
 
 Much of the underlying functionality utilizes PHP's native PostgreSQL driver to maintain performance and reliability.
 
 <b>Features</b>
-* Automatic detection and transformation of most PostgreSQL data-types to native PHP data structures. Includes Integers, Floats, Booleans, NULLs, Arrays, Hstores, Geometrical Types, and more!
-* Transaction-style database cursors, with commit and rollback functionality.
-* Superglobal database connections: Retrieve existing database connections from any scope.
+* Automatic detection and conversion of most PostgreSQL data-types to native PHP data structures, such as: Integer, Float, Boolean, NULL, Array, Hstore, Geometrical Data-Types, Date/Time, and more.
+* Transaction-style database cursors, including commit and rollback.
+* Access to existing database connections from any scope in PHP.
 
-<b>More on Automatic Detection & Transformation of PostgreSQL Data-Types</b>
-* PostgreSQL Arrays (any data-type) to PHP Arrays.
-* PostgreSQL Hstores to PHP Associative Arrays.
-* PostgreSQL Geometric Data-Types (box, point, polygon, lseg, etc) to native PHP Associative Arrays.
-* PostgreSQL Dates / Timestamps to native PHP DateTime Objects (including automatic detection of Time Zones).
+<b>More on Automatic Detection & Conversion of PostgreSQL Data-Types</b>
+* PostgreSQL Arrays (any data-type) to/from PHP Arrays.
+* PostgreSQL Hstores to/from PHP Associative Arrays.
+* PostgreSQL Geometric Data-Types (box, point, polygon, lseg, etc) to/from native PHP Associative Arrays.
+* PostgreSQL Dates / Timestamps to/from native PHP DateTime Objects (including automatic detection of Time Zones).
 * ... And much more!
 
 <b>Requirements</b>
 * PHP: 5.0 or later
 * PostgreSQL: 8.0 or later
-* PostgreSQL Contrib Modules (Optional) : hstore, PostGIS (PostgreSQL 8.x, built into 9.x)
+* PostgreSQL Contrib Modules (Optional): hstore, PostGIS (PostgreSQL 8.x, built into 9.x)
 
 About The Author
 ================
