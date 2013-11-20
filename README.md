@@ -288,3 +288,5 @@ while($user = $cursor->iter()) {
 // Free the result set, because we have no further need for it.
 $cursor->free();
 ```
+
+[![Bitdeli Badge](https://d2weczhvl823v0.cloudfront.net/JDBurnZ/jquery-filefive/trend.png)](https://bitdeli.com/free "Bitdeli Badge")
