@@ -44,6 +44,10 @@ About The Author
 * 15+ years of programming experience including PHP, Python and Javascript.
 * Intimate working knowledge of PostgreSQL, Microsoft SQL Server, MySQL and MongoDB database back-ends.
 
+License
+=======
+Please refer to the LICENSE file for licensing and copyright information.
+
 Quick Start Guide / Tutorial
 ============================
 
