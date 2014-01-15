@@ -1,6 +1,6 @@
 The MIT License (MIT)
 
-Copyright © 2013-2014 Joshua D. Burns (JDBurnZ) and Message In Action LLC
+Copyright © 2012-2014 Joshua D. Burns (JDBurnZ) and Message In Action LLC
 
 Joshua D. Burns
 
