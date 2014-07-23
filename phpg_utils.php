@@ -84,7 +84,7 @@ class PHPG_Utils {
 		// Return the PostgreSQL Hstore String.
 		return $pg_hstore;
 	}
-
+ 
 	// Helper method for hstoreFromPhp().
 	private static function _hstoreFromPhpHelper($php_hstore, $auto_escape = False) {
 		$pg_hstore = array();
