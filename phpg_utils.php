@@ -137,49 +137,81 @@ class PHPG_Utils {
 
 	// Helper method for hstoreToPhp().
 	private static function _hstoreToPhpHelper($string) {
-		// Break up the hstore string into an array of key/value pairs.
-		if(!$string || !preg_match_all('/"(.+)(?<!\\\)"=>(NULL|""|".+(?<!\\\)"),?/Us', $string, $match, PREG_SET_ORDER)) {
-			// NOTE: Added: "s" modified to end of regex to allow for newlines in values.
+		$string_length = strlen($string);
 
-			// TODO: In the future, should this throw an exception?
-
-			// If the string is empty or if the string is mal-formed,
-			// return an empty array.
-			return array();
-		}
-
-		// Define the characters we need to un-escape within the hstore's
-		// keys and values.
-		$escape_search = array('\"', '\\\\');
-		$escape_replace = array('"', '\\');
-
-		// Define the Associative Array we'll be populating and returning.
-		$array = array();
-
-		// Iterate over each
-		foreach($match as $set) {
-			$key = $set[1];
-			$value = $set[2];
-
-			// Un-escape characters within the key.
-			$key = str_replace($escape_search, $escape_replace, $key);
-
-			if($value === 'NULL') {
-				$value = NULL;
-			} else {
-				// Remove double-quotes from the start and end of the
-				// string.
-				$value = substr($value, 1, -1);
-
-				// Un-escape characters within the value.
-				$value = str_replace($escape_search, $escape_replace, $value);
+		// TODO: Check if array and act appropriately.
+		$return = array();
+		$prev = Null;
+		$quoted = False;
+		$parsing = 'key';
+		$key = '';
+		$part = Null;
+		$skip = 0;
+		for($i=0; $i < $string_length; $i++) {
+			$character = $string[$i];
+		//foreach($string as $character) {
+			if($skip) { // Sometimes we need to ignore the next character or two.
+				$skip--;
+				continue;
 			}
-
-			$array[$key] = $value;
+			if($prev === Null && $character === '"') { // First character, look for starting double-quotes
+				$quoted = True;
+				$prev = $character;
+				continue; // We're through with this iteration of the loop.
+			} else {
+				if($quoted) {
+					if($character === '\\') {
+						$prev = $character;
+						continue;
+					}
+					if($character === '"' && $prev !== '\\') {
+						$prev = Null;
+						$quoted = False;
+						if($parsing === 'key') { // Finished parsing quoted key.
+							$parsing = 'value';
+							$key = $part; // Store the key for reference later.
+							$skip = 2; // Skip the next two iterations, for "=>"
+						} else { // Finished parsing quoted value.
+							$parsing = 'key';
+							$return[$key] = $part; // Store the key/value combination.
+							$key = '';
+						}
+						$part = Null;
+						continue; // We're through with this iteration of the loop.
+					}
+				} else {
+					if($part === Null && $character === ',') { // If previous value was quoted, will encounter rogue comma.
+						continue;
+					}
+					if($parsing === 'key' && $character === '=') { // End of key, denoted by "=>".
+						$prev = Null;
+						$quoted = False;
+						$parsing = 'value';
+						$key = $part; // Store the key for reference later.
+						$skip = 1; // Skip the upcoming ">".
+						$part = Null;
+						continue; // We're through with this iteration of the loop.
+					} else if($parsing === 'value' && $character === ',') { // End of value, demoted by ",".
+						$prev = Null;
+						$quoted = False;
+						$parsing = 'key';
+						$return[$key] = $part; // Store the key/value combination.
+						$key = '';
+						$part = Null;
+						continue; // We're through with this iteration of the loop.
+					}
+				}
+				if($part === Null) {
+					$part = '';
+				}
+				$prev = $part;
+				$part .= $character;
+			}
 		}
-
-		// Return our PHP Associative Array.
-		return $array;
+		if($prev !== Null || $part !== Null) {
+			$return[$key] = $part;
+		}
+		return $return;
 	}
 
 	// ARRAY: POSTGRESQL Array to PHP Array
