@@ -40,11 +40,13 @@
 
 class PHPG_Utils {
 	// HSTORE: PHP Associative Array to POSTGRESQL Hstore
-	public static function hstoreFromPhp($php_array, $hstore_array = Null, $auto_escape = False) {
+	public static function hstoreFromPhp($php_array, $hstore_array = False, $auto_escape = False) {
 		// Determine whether the PHP Array passed is an array of Associative
 		// Arrays, or a single-dimensional Associative Array.
 		$array_of_hstores = False;
-		if($hstore_array === Null) {
+
+		// DOESNT WORK RIGHT, need to remove.
+		if($hstore_array === True) {
 			// Only properly detects an array of hstores if the array's
 			// offset starts at zero, and each entry from there is
 			// sequentially in order.
@@ -74,7 +76,7 @@ class PHPG_Utils {
 			// Convert our PHP Array of Hstore Strings to a single
 			// PostgreSQL Hstore Array String, which is fit for sending to
 			// PostgreSQL.
-			$pg_hstore = self::arrayFromPhp($pg_hstore, $auto_escape);
+			$pg_hstore = self::pgArrayFromPhp($pg_hstore, $auto_escape);
 		} else { // Associative Array.
 			// Convert a single-dimensional PHP Associative Array to a
 			// PostgreSQL Hstore String, fit for sending to PostgreSQL.
@@ -84,14 +86,14 @@ class PHPG_Utils {
 		// Return the PostgreSQL Hstore String.
 		return $pg_hstore;
 	}
- 
+
 	// Helper method for hstoreFromPhp().
 	private static function _hstoreFromPhpHelper($php_hstore, $auto_escape = False) {
 		$pg_hstore = array();
 
 		foreach($php_hstore as $key => $val) {
-			$search = array('\\', "'", '"');
-			$replace = array('\\\\', "''", '\"');
+			$search = array('\\', '"');
+			$replace = array('\\\\', '\"');
 
 			$key = str_replace($search, $replace, $key);
 			if($auto_escape) {
@@ -170,17 +172,19 @@ class PHPG_Utils {
 						if($parsing === 'key') { // Finished parsing quoted key.
 							$parsing = 'value';
 							$key = $part; // Store the key for reference later.
-							$skip = 2; // Skip the next two iterations, for "=>"
+							$skip = 2; // Skip trailing "=" and ">"
 						} else { // Finished parsing quoted value.
 							$parsing = 'key';
 							$return[$key] = $part; // Store the key/value combination.
 							$key = '';
+							$skip = 2; // Skip trailing "," and space.
 						}
 						$part = Null;
 						continue; // We're through with this iteration of the loop.
 					}
 				} else {
 					if($part === Null && $character === ',') { // If previous value was quoted, will encounter rogue comma.
+						$skip = 1; // Skip trailing space
 						continue;
 					}
 					if($parsing === 'key' && $character === '=') { // End of key, denoted by "=>".
@@ -188,7 +192,7 @@ class PHPG_Utils {
 						$quoted = False;
 						$parsing = 'value';
 						$key = $part; // Store the key for reference later.
-						$skip = 1; // Skip the upcoming ">".
+						$skip = 1; // Skip trailing ">".
 						$part = Null;
 						continue; // We're through with this iteration of the loop.
 					} else if($parsing === 'value' && $character === ',') { // End of value, demoted by ",".
@@ -198,6 +202,7 @@ class PHPG_Utils {
 						$return[$key] = $part; // Store the key/value combination.
 						$key = '';
 						$part = Null;
+						$skip = 1; // Skip trailing space
 						continue; // We're through with this iteration of the loop.
 					}
 				}
@@ -312,5 +317,25 @@ class PHPG_Utils {
 			return '';
 		}
 		return "'" . implode("','", $array) . "'";
+	}
+
+	public static function dateToPhp($date_string, $format = False) {
+		$timestamp = self::pgDateToPhpTimestamp($date_string);
+		if($format === False) {
+			$format = 'n/j/Y';
+		}
+		return date($format, $timestamp);
+	}
+
+	public static function dateToPhpTimestamp($date_string) {
+		return strtotime($date_string);
+	}
+
+	public static function dateFromPhpString($datetime) {
+		return date('Y-m-d H:i O', strtotime($datetime));
+	}
+
+	public static function dateFromPhpEpoch($timestamp) {
+		return date('Y-m-d H:i O', $timestamp);
 	}
 }
